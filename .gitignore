@@ -1,0 +1,75 @@
+# ──────────────────────────────────────────
+# Fichiers système (macOS, Windows, Linux)
+# ──────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ──────────────────────────────────────────
+# Éditeurs / IDE
+# ──────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ──────────────────────────────────────────
+# Obsidian (chemins locaux, plugins, thèmes,
+# espace de travail = info personnelle)
+# ──────────────────────────────────────────
+.obsidian/
+.trash/
+
+# ──────────────────────────────────────────
+# Secrets et variables d'environnement
+# ──────────────────────────────────────────
+.env
+.env.*
+*.key
+*.pem
+secrets/
+credentials.json
+
+# ──────────────────────────────────────────
+# Sauvegardes et fichiers temporaires
+# ──────────────────────────────────────────
+*.bak
+*.backup
+*.tmp
+*.temp
+*.log
+~$*
+
+# ──────────────────────────────────────────
+# Dossiers personnels (à exclure du public)
+# ──────────────────────────────────────────
+private/
+personal/
+brouillons/
+notes-perso/
+
+# ──────────────────────────────────────────
+# Fichiers de design payants ou propriétaires
+# ──────────────────────────────────────────
+design/
+*.sketch
+*.fig
+*.xd
+
+# ──────────────────────────────────────────
+# Instructions internes (non destinées aux
+# participants de la formation)
+# ──────────────────────────────────────────
+CLAUDE.md
+.claude/

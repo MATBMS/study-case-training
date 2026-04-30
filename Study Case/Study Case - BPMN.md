@@ -14,7 +14,7 @@ Avant de tracer le moindre élément, on fixe les frontières du modèle. Le mé
 
 > **📝 Mémo de périmètre — Processus Order-to-Cash NovaTrade**
 >
-> - **Déclencheur (*trigger*) :** le Client transmet une commande à NovaTrade.
+> - **Déclencheur (_trigger_) :** le Client transmet une commande à NovaTrade.
 > - **Événements de fin :** (a) Commande clôturée après paiement rapproché (chemin nominal) ; (b) Commande rejetée pour Client suspendu ; (c) Commande mise en attente pour stock insuffisant ; (d) Escalade pour recouvrement formel après 3 relances sans paiement.
 > - **Participants externes :** Client (organisation cliente), Transporteur (prestataire logistique).
 > - **Participants internes (couloirs NovaTrade) :** Vente (Représentant commercial), Exécution (Opérateur d'entrepôt), Finance (Contrôleur financier).
@@ -26,9 +26,9 @@ Ce mémo doit tenir sur un post-it. Si l'on n'arrive pas à le résumer aussi su
 
 ## 2. Niveau 0 — Diagramme de Contexte
 
-Le diagramme de contexte (*context diagram*) montre l'OMS NovaTrade comme une boîte unique, avec ses participants externes et les messages échangés. C'est la vue la plus haute, validable par le Directeur des Opérations en moins d'une minute.
+Le diagramme de contexte (_context diagram_) montre l'OMS NovaTrade comme une boîte unique, avec ses participants externes et les messages échangés. C'est la vue la plus haute, validable par le Directeur des Opérations en moins d'une minute.
 
-![[Study Case - BPMN - Niveau 0.png]]
+![Study Case - BPMN - Niveau 0](<Study Case - BPMN - Niveau 0.png>)
 
 > **📎 Diagramme :** `Study Case - BPMN - Niveau 0.bpmn`
 >
@@ -40,9 +40,9 @@ Le diagramme de contexte (*context diagram*) montre l'OMS NovaTrade comme une bo
 
 ## 3. Niveau 1 — Vue d'Ensemble du Processus O2C
 
-Au Niveau 1, on déplie l'OMS en sa **piscine NovaTrade unique** avec ses trois couloirs métier. Trois sous-processus repliés (*collapsed sub-processes*) couvrent l'enchaînement complet, un par couloir. Les participants externes restent en piscines fermées.
+Au Niveau 1, on déplie l'OMS en sa **piscine NovaTrade unique** avec ses trois couloirs métier. Trois sous-processus repliés (_collapsed sub-processes_) couvrent l'enchaînement complet, un par couloir. Les participants externes restent en piscines fermées.
 
-![[Study Case - BPMN - Niveau 1.png]]
+![Study Case - BPMN - Niveau 1](<Study Case - BPMN - Niveau 1.png>)
 
 > **📎 Diagramme :** `Study Case - BPMN - Niveau 1.bpmn`
 >
@@ -60,37 +60,37 @@ Chaque sous-processus replié du Niveau 1 est ici développé en éléments indi
 
 Ce sous-processus traite UC-01 (Passer une Commande) côté métier. Les contrôles de validation (statut Client, stock) s'exécutent en parallèle pour optimiser le temps de traitement avant la décision de confirmation.
 
-![[Study Case - BPMN - Niveau 2.1 Vente.png]]
+![Study Case - BPMN - Niveau 2.1](<Study Case - BPMN - Niveau 2.1 Vente.png>)
 
 > **📎 Diagramme :** `Study Case - BPMN - Niveau 2.1 Vente.bpmn`
 >
 > Fichier BPMN 2.0. Contient : Événement de Début Message ; Passerelle Parallèle de division ; Tâche de Règle Métier (vérification statut Client) et Tâche de Service (vérification stock) en parallèle ; Fusion Parallèle ; Passerelle Exclusive avec trois branches (confirmation, rejet, mise en attente) ; trois événements de fin distincts ; deux Tâches d'Envoi ; trois flux de messages avec le Client.
 
-> **Lecture du diagramme :** les deux vérifications (statut Client, stock) s'exécutent en parallèle via une Passerelle Parallèle (*Parallel Gateway*) en division. Une Fusion Parallèle attend les deux résultats avant la décision exclusive. Trois issues nommées : confirmation, rejet (Client suspendu), mise en attente (stock insuffisant). Chaque chemin se termine par son propre événement de fin — aucune flèche dans le vide.
+> **Lecture du diagramme :** les deux vérifications (statut Client, stock) s'exécutent en parallèle via une Passerelle Parallèle (_Parallel Gateway_) en division. Une Fusion Parallèle attend les deux résultats avant la décision exclusive. Trois issues nommées : confirmation, rejet (Client suspendu), mise en attente (stock insuffisant). Chaque chemin se termine par son propre événement de fin — aucune flèche dans le vide.
 
 ### 4.2 Préparer et expédier la commande (couloir Exécution)
 
-Ce sous-processus traite UC-02 (Exécuter la Commande). Le **prélèvement physique** (*pick & pack*) et la **génération de l'étiquette de transport** peuvent se faire en parallèle pour gagner du temps. La fin du sous-processus est marquée par la prise en charge effective par le Transporteur.
+Ce sous-processus traite UC-02 (Exécuter la Commande). Le **prélèvement physique** (_pick & pack_) et la **génération de l'étiquette de transport** peuvent se faire en parallèle pour gagner du temps. La fin du sous-processus est marquée par la prise en charge effective par le Transporteur.
 
-![[Study Case - BPMN - Niveau 2.2 Execution.png]]
+![Study Case - BPMN - Niveau 2.2](<Study Case - BPMN - Niveau 2.2 Execution.png>)
 
 > **📎 Diagramme :** `Study Case - BPMN - Niveau 2.2 Execution.bpmn`
 >
 > Fichier BPMN 2.0. Contient : trois piscines (Client, NovaTrade-Exécution, Transporteur) ; Tâche de Service initiale (génération liste de prélèvement) ; Passerelle Parallèle activant en parallèle une Tâche Utilisateur (prélèvement physique) et une Tâche de Service (étiquette de transport) ; Fusion Parallèle ; Tâche d'Envoi vers le Transporteur ; Événement Intermédiaire de Réception Message attendant la collecte ; Tâche de Service d'enregistrement ; Tâche d'Envoi vers le Client ; trois flux de messages externes.
 
-> **Lecture du diagramme :** la Passerelle Parallèle après « Générer la liste de prélèvement » lance simultanément l'opération physique (Tâche Utilisateur exécutée par l'Opérateur d'entrepôt) et la préparation logistique (Tâche de Service générant l'étiquette). La Fusion Parallèle synchronise les deux avant la notification au Transporteur. L'**Événement Intermédiaire de Réception Message** (*Message Catch Event*) « Collecte par le Transporteur » modélise l'attente du message du Transporteur — c'est un point d'attente passif, pas une tâche.
+> **Lecture du diagramme :** la Passerelle Parallèle après « Générer la liste de prélèvement » lance simultanément l'opération physique (Tâche Utilisateur exécutée par l'Opérateur d'entrepôt) et la préparation logistique (Tâche de Service générant l'étiquette). La Fusion Parallèle synchronise les deux avant la notification au Transporteur. L'**Événement Intermédiaire de Réception Message** (_Message Catch Event_) « Collecte par le Transporteur » modélise l'attente du message du Transporteur — c'est un point d'attente passif, pas une tâche.
 
 ### 4.3 Facturer et encaisser (couloir Finance)
 
-Ce sous-processus traite UC-03 (Traiter la Facture et le Paiement). Il introduit deux mécanismes BPMN avancés : la **Passerelle Basée sur Événements** (*Event-Based Gateway*) pour modéliser l'attente concurrente entre paiement et échéance, et la **boucle de relance** pour la procédure de relance (*dunning*) — encapsulée dans un sous-processus replié au Niveau 3.
+Ce sous-processus traite UC-03 (Traiter la Facture et le Paiement). Il introduit deux mécanismes BPMN avancés : la **Passerelle Basée sur Événements** (_Event-Based Gateway_) pour modéliser l'attente concurrente entre paiement et échéance, et la **boucle de relance** pour la procédure de relance (_dunning_) — encapsulée dans un sous-processus replié au Niveau 3.
 
-![[Study Case - BPMN - Niveau 2.3 Finance.png]]
+![Study Case - BPMN - Niveau 2.3](<Study Case - BPMN - Niveau 2.3 Finance.png>)
 
 > **📎 Diagramme :** `Study Case - BPMN - Niveau 2.3 Finance.bpmn`
 >
 > Fichier BPMN 2.0. Contient : deux piscines (Client en boîte noire et NovaTrade-Finance) ; Tâche de Service de génération de facture ; Tâche d'Envoi vers le Client ; Tâche de Service de publication ERP ; Passerelle Basée sur Événements avec deux issues concurrentes (Événement Intermédiaire Message « Paiement reçu » et Événement Intermédiaire Minuteur « Date d'échéance ») ; chemin de retard avec sous-processus replié de relances et Passerelle Exclusive ; chemin de capture commun à T4 ; Tâche de rapprochement ; deux événements de fin (Facture payée, Escalade) ; trois flux de messages avec le Client.
 
-> **Lecture du diagramme :** la Passerelle Basée sur Événements après l'envoi de la facture matérialise une **course** (*race*) entre deux événements : le paiement du Client (Événement Intermédiaire Message) et l'expiration du délai (Événement Intermédiaire Minuteur, calé sur 30 ou 45 jours selon BR-11). Les deux chemins se rejoignent sur la capture du paiement (T4), ou bifurquent vers l'escalade après trois relances infructueuses. Le sous-processus replié « Relancer le client » contient lui-même une boucle interne (Niveau 3, non développée ici).
+> **Lecture du diagramme :** la Passerelle Basée sur Événements après l'envoi de la facture matérialise une **course** (_race_) entre deux événements : le paiement du Client (Événement Intermédiaire Message) et l'expiration du délai (Événement Intermédiaire Minuteur, calé sur 30 ou 45 jours selon BR-11). Les deux chemins se rejoignent sur la capture du paiement (T4), ou bifurquent vers l'escalade après trois relances infructueuses. Le sous-processus replié « Relancer le client » contient lui-même une boucle interne (Niveau 3, non développée ici).
 
 ---
 
@@ -98,15 +98,15 @@ Ce sous-processus traite UC-03 (Traiter la Facture et le Paiement). Il introduit
 
 ### Une seule piscine pour NovaTrade
 
-Vente, Exécution et Finance sont des départements de la **même organisation** NovaTrade. La règle structurelle BPMN est intransigeante : **une organisation = une piscine, un département = un couloir**. Modéliser Vente, Exécution et Finance comme trois piscines distinctes constituerait l'erreur structurelle la plus fréquente sur ce type de processus, et obligerait à utiliser des Flux de Messages (*Message Flows*) entre départements internes — sémantiquement incorrect et opérationnellement absurde.
+Vente, Exécution et Finance sont des départements de la **même organisation** NovaTrade. La règle structurelle BPMN est intransigeante : **une organisation = une piscine, un département = un couloir**. Modéliser Vente, Exécution et Finance comme trois piscines distinctes constituerait l'erreur structurelle la plus fréquente sur ce type de processus, et obligerait à utiliser des Flux de Messages (_Message Flows_) entre départements internes — sémantiquement incorrect et opérationnellement absurde.
 
-### Boîte noire (*black-box*) pour Client et Transporteur
+### Boîte noire (_black-box_) pour Client et Transporteur
 
-Le Client et le Transporteur sont des organisations externes dont on **ne modélise pas** le détail interne. C'est la sémantique BPMN de la **piscine fermée** (*black-box pool*) : on connaît les messages échangés, pas les processus internes du participant. Si NovaTrade décidait un jour d'intégrer plus profondément avec un Transporteur partenaire (intégration EDI complète), on pourrait déplier sa piscine en boîte blanche — mais c'est hors périmètre ici.
+Le Client et le Transporteur sont des organisations externes dont on **ne modélise pas** le détail interne. C'est la sémantique BPMN de la **piscine fermée** (_black-box pool_) : on connaît les messages échangés, pas les processus internes du participant. Si NovaTrade décidait un jour d'intégrer plus profondément avec un Transporteur partenaire (intégration EDI complète), on pourrait déplier sa piscine en boîte blanche — mais c'est hors périmètre ici.
 
 ### ERP, Passerelle de paiement et Service de notification : pas de piscines
 
-Ces trois systèmes sont **invoqués** par l'OMS comme des services techniques. À ce niveau d'abstraction métier (BPMN), ils apparaissent sous forme de **Tâches de Service** (*Service Task*) — la facture est « publiée dans l'ERP » par une Tâche de Service ; le paiement est « capturé via la Passerelle » par une Tâche de Service ; le Client est notifié par une **Tâche d'Envoi** (*Send Task*). Le détail technique des appels et des protocoles relève des diagrammes de séquence UML (livrables 03 à 05), pas du BPMN métier.
+Ces trois systèmes sont **invoqués** par l'OMS comme des services techniques. À ce niveau d'abstraction métier (BPMN), ils apparaissent sous forme de **Tâches de Service** (_Service Task_) — la facture est « publiée dans l'ERP » par une Tâche de Service ; le paiement est « capturé via la Passerelle » par une Tâche de Service ; le Client est notifié par une **Tâche d'Envoi** (_Send Task_). Le détail technique des appels et des protocoles relève des diagrammes de séquence UML (livrables 03 à 05), pas du BPMN métier.
 
 ### Passerelles Parallèles vs Exclusives
 
@@ -114,7 +114,7 @@ Au Niveau 2.1 (Vente), les contrôles statut Client + stock sont mis en parallè
 
 ### Passerelle Basée sur Événements pour le paiement
 
-Au Niveau 2.3 (Finance), on attend l'un des deux événements suivants : le paiement du Client (qui peut arriver à tout moment) ou l'échéance de la facture (qui se déclenche automatiquement à 30 ou 45 jours). C'est précisément le cas d'usage de la Passerelle Basée sur Événements (*Event-Based Gateway*) — le **premier** événement qui arrive **gagne** la course. Une simple passerelle exclusive avec deux conditions ne fonctionnerait pas, car les conditions ne sont pas évaluables au moment du choix : on ne sait pas, à l'instant où l'on arrive sur la passerelle, si le paiement va arriver avant ou après l'échéance.
+Au Niveau 2.3 (Finance), on attend l'un des deux événements suivants : le paiement du Client (qui peut arriver à tout moment) ou l'échéance de la facture (qui se déclenche automatiquement à 30 ou 45 jours). C'est précisément le cas d'usage de la Passerelle Basée sur Événements (_Event-Based Gateway_) — le **premier** événement qui arrive **gagne** la course. Une simple passerelle exclusive avec deux conditions ne fonctionnerait pas, car les conditions ne sont pas évaluables au moment du choix : on ne sait pas, à l'instant où l'on arrive sur la passerelle, si le paiement va arriver avant ou après l'échéance.
 
 ### Sous-processus repliés au Niveau 1
 
@@ -134,7 +134,7 @@ Au lieu d'un seul sous-processus Finance couvrant facturation et paiement, on pe
 
 ### Bordure Minuteur globale de SLA
 
-Pour matérialiser un SLA global « commande clôturée sous 45 jours », on peut attacher une **Bordure Minuteur non-interrompante** (*Non-Interrupting Timer Boundary Event*) au sous-processus Finance au Niveau 1, qui notifierait le Management si l'on dépasse ce délai. Cette variante est pédagogiquement intéressante mais introduit une notation avancée que le Niveau 1 cherche normalement à éviter.
+Pour matérialiser un SLA global « commande clôturée sous 45 jours », on peut attacher une **Bordure Minuteur non-interrompante** (_Non-Interrupting Timer Boundary Event_) au sous-processus Finance au Niveau 1, qui notifierait le Management si l'on dépasse ce délai. Cette variante est pédagogiquement intéressante mais introduit une notation avancée que le Niveau 1 cherche normalement à éviter.
 
 ### Service de notification en piscine
 
@@ -156,4 +156,4 @@ Garder ce diagramme propre et accessible — il sera référencé à chaque éta
 
 ---
 
-*Livrable suivant : `Study Case - Use Case Diagram.md`*
+_Livrable suivant : `Study Case - Use Case Diagram.md`_

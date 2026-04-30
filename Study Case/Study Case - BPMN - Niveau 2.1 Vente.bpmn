@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_N21" targetNamespace="http://nsi-training/study-case/bpmn" exporter="Camunda Web Modeler" exporterVersion="a89018a" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:collaboration id="Collaboration_N21">
+    <bpmn:participant id="Pool_Client" name="Client (boîte noire)" />
+    <bpmn:participant id="Pool_Vente" name="NovaTrade — Vente (Recevoir et confirmer la commande)" processRef="Process_Vente" />
+    <bpmn:messageFlow id="MF_Commande" name="Commande" sourceRef="Pool_Client" targetRef="Start_Cmd" />
+    <bpmn:messageFlow id="MF_Confirmation" name="Confirmation" sourceRef="T5_NotifClient" targetRef="Pool_Client" />
+    <bpmn:messageFlow id="MF_Rejet" name="Notification rejet" sourceRef="EndReject" targetRef="Pool_Client" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Vente" isExecutable="false">
+    <bpmn:sequenceFlow id="SF_Start_Split" sourceRef="Start_Cmd" targetRef="ParaSplit" />
+    <bpmn:sequenceFlow id="SF_Split_T1" sourceRef="ParaSplit" targetRef="T1_StatutClient" />
+    <bpmn:sequenceFlow id="SF_Split_T2" sourceRef="ParaSplit" targetRef="T2_Stock" />
+    <bpmn:sequenceFlow id="SF_T1_Join" sourceRef="T1_StatutClient" targetRef="ParaJoin" />
+    <bpmn:sequenceFlow id="SF_T2_Join" sourceRef="T2_Stock" targetRef="ParaJoin" />
+    <bpmn:sequenceFlow id="SF_Join_XOR" sourceRef="ParaJoin" targetRef="XOR_Validation" />
+    <bpmn:sequenceFlow id="SF_XOR_OK" name="Oui" sourceRef="XOR_Validation" targetRef="T3_Reserve" />
+    <bpmn:sequenceFlow id="SF_XOR_Reject" name="Non — Client suspendu" sourceRef="XOR_Validation" targetRef="EndReject" />
+    <bpmn:sequenceFlow id="SF_XOR_Hold" name="Non — Stock insuffisant" sourceRef="XOR_Validation" targetRef="T6_Hold" />
+    <bpmn:sequenceFlow id="SF_T3_T4" sourceRef="T3_Reserve" targetRef="T4_Confirm" />
+    <bpmn:sequenceFlow id="SF_T4_T5" sourceRef="T4_Confirm" targetRef="T5_NotifClient" />
+    <bpmn:sequenceFlow id="SF_T5_EndOK" sourceRef="T5_NotifClient" targetRef="EndOK" />
+    <bpmn:sequenceFlow id="SF_T6_T7" sourceRef="T6_Hold" targetRef="T7_NotifSalesRep" />
+    <bpmn:sequenceFlow id="SF_T7_EndHold" sourceRef="T7_NotifSalesRep" targetRef="EndHold" />
+    <bpmn:startEvent id="Start_Cmd" name="Commande reçue">
+      <bpmn:outgoing>SF_Start_Split</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_Start" />
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="ParaSplit" name="">
+      <bpmn:incoming>SF_Start_Split</bpmn:incoming>
+      <bpmn:outgoing>SF_Split_T1</bpmn:outgoing>
+      <bpmn:outgoing>SF_Split_T2</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:businessRuleTask id="T1_StatutClient" name="Vérifier le statut du Client (BR-01)">
+      <bpmn:incoming>SF_Split_T1</bpmn:incoming>
+      <bpmn:outgoing>SF_T1_Join</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:serviceTask id="T2_Stock" name="Vérifier la disponibilité du stock (BR-03)">
+      <bpmn:incoming>SF_Split_T2</bpmn:incoming>
+      <bpmn:outgoing>SF_T2_Join</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="ParaJoin" name="">
+      <bpmn:incoming>SF_T1_Join</bpmn:incoming>
+      <bpmn:incoming>SF_T2_Join</bpmn:incoming>
+      <bpmn:outgoing>SF_Join_XOR</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="XOR_Validation" name="Tous les contrôles passés ?">
+      <bpmn:incoming>SF_Join_XOR</bpmn:incoming>
+      <bpmn:outgoing>SF_XOR_Reject</bpmn:outgoing>
+      <bpmn:outgoing>SF_XOR_Hold</bpmn:outgoing>
+      <bpmn:outgoing>SF_XOR_OK</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T3_Reserve" name="Réserver le stock">
+      <bpmn:incoming>SF_XOR_OK</bpmn:incoming>
+      <bpmn:outgoing>SF_T3_T4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T4_Confirm" name="Marquer la commande Confirmed">
+      <bpmn:incoming>SF_T3_T4</bpmn:incoming>
+      <bpmn:outgoing>SF_T4_T5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="T5_NotifClient" name="Notifier le Client">
+      <bpmn:incoming>SF_T4_T5</bpmn:incoming>
+      <bpmn:outgoing>SF_T5_EndOK</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="EndOK" name="Commande confirmée">
+      <bpmn:incoming>SF_T5_EndOK</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndReject" name="Rejet — Client suspendu">
+      <bpmn:incoming>SF_XOR_Reject</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MED_Reject" />
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="T6_Hold" name="Mettre la commande OnHold">
+      <bpmn:incoming>SF_XOR_Hold</bpmn:incoming>
+      <bpmn:outgoing>SF_T6_T7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="T7_NotifSalesRep" name="Notifier le Représentant commercial">
+      <bpmn:incoming>SF_T6_T7</bpmn:incoming>
+      <bpmn:outgoing>SF_T7_EndHold</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="EndHold" name="Commande OnHold">
+      <bpmn:incoming>SF_T7_EndHold</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_N21">
+    <bpmndi:BPMNPlane id="BPMNPlane_N21" bpmnElement="Collaboration_N21">
+      <bpmndi:BPMNShape id="Pool_Client_di" bpmnElement="Pool_Client" isHorizontal="true">
+        <dc:Bounds x="160" y="60" width="1270" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_Vente_di" bpmnElement="Pool_Vente" isHorizontal="true">
+        <dc:Bounds x="160" y="180" width="1300" height="440" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Cmd_di" bpmnElement="Start_Cmd">
+        <dc:Bounds x="250" y="382" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="226" y="425" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParaSplit_di" bpmnElement="ParaSplit">
+        <dc:Bounds x="330" y="375" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T1_di" bpmnElement="T1_StatutClient">
+        <dc:Bounds x="430" y="270" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T2_di" bpmnElement="T2_Stock">
+        <dc:Bounds x="430" y="450" width="160" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParaJoin_di" bpmnElement="ParaJoin">
+        <dc:Bounds x="640" y="375" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="XOR_di" bpmnElement="XOR_Validation" isMarkerVisible="true">
+        <dc:Bounds x="740" y="375" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="678" y="340" width="83" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T3_di" bpmnElement="T3_Reserve">
+        <dc:Bounds x="850" y="360" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T4_di" bpmnElement="T4_Confirm">
+        <dc:Bounds x="1020" y="360" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T5_di" bpmnElement="T5_NotifClient">
+        <dc:Bounds x="1190" y="360" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndOK_di" bpmnElement="EndOK">
+        <dc:Bounds x="1370" y="382" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1360" y="425" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndReject_di" bpmnElement="EndReject">
+        <dc:Bounds x="850" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="835" y="275" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T6_di" bpmnElement="T6_Hold">
+        <dc:Bounds x="850" y="500" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T7_di" bpmnElement="T7_NotifSalesRep">
+        <dc:Bounds x="1020" y="500" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndHold_di" bpmnElement="EndHold">
+        <dc:Bounds x="1190" y="522" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1182" y="565" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_Split_di" bpmnElement="SF_Start_Split">
+        <di:waypoint x="286" y="400" />
+        <di:waypoint x="330" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Split_T1_di" bpmnElement="SF_Split_T1">
+        <di:waypoint x="355" y="375" />
+        <di:waypoint x="355" y="310" />
+        <di:waypoint x="430" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Split_T2_di" bpmnElement="SF_Split_T2">
+        <di:waypoint x="355" y="425" />
+        <di:waypoint x="355" y="490" />
+        <di:waypoint x="430" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T1_Join_di" bpmnElement="SF_T1_Join">
+        <di:waypoint x="590" y="310" />
+        <di:waypoint x="665" y="310" />
+        <di:waypoint x="665" y="375" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T2_Join_di" bpmnElement="SF_T2_Join">
+        <di:waypoint x="590" y="490" />
+        <di:waypoint x="665" y="490" />
+        <di:waypoint x="665" y="425" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Join_XOR_di" bpmnElement="SF_Join_XOR">
+        <di:waypoint x="690" y="400" />
+        <di:waypoint x="740" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR_OK_di" bpmnElement="SF_XOR_OK">
+        <di:waypoint x="790" y="400" />
+        <di:waypoint x="850" y="400" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="811" y="375" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR_Reject_di" bpmnElement="SF_XOR_Reject">
+        <di:waypoint x="765" y="375" />
+        <di:waypoint x="765" y="250" />
+        <di:waypoint x="850" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="777" y="316" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR_Hold_di" bpmnElement="SF_XOR_Hold">
+        <di:waypoint x="765" y="425" />
+        <di:waypoint x="765" y="540" />
+        <di:waypoint x="850" y="540" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="767" y="496" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T3_T4_di" bpmnElement="SF_T3_T4">
+        <di:waypoint x="990" y="400" />
+        <di:waypoint x="1020" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T4_T5_di" bpmnElement="SF_T4_T5">
+        <di:waypoint x="1160" y="400" />
+        <di:waypoint x="1190" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T5_EndOK_di" bpmnElement="SF_T5_EndOK">
+        <di:waypoint x="1330" y="400" />
+        <di:waypoint x="1370" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T6_T7_di" bpmnElement="SF_T6_T7">
+        <di:waypoint x="990" y="540" />
+        <di:waypoint x="1020" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T7_EndHold_di" bpmnElement="SF_T7_EndHold">
+        <di:waypoint x="1160" y="540" />
+        <di:waypoint x="1190" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Commande_di" bpmnElement="MF_Commande">
+        <di:waypoint x="268" y="140" />
+        <di:waypoint x="268" y="382" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="281" y="343" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Confirmation_di" bpmnElement="MF_Confirmation">
+        <di:waypoint x="1260" y="360" />
+        <di:waypoint x="1260" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1178" y="203" width="63" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Rejet_di" bpmnElement="MF_Rejet">
+        <di:waypoint x="868" y="232" />
+        <di:waypoint x="868" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="880" y="193" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

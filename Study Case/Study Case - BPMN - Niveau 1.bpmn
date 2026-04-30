@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_N1" targetNamespace="http://nsi-training/study-case/bpmn" exporter="Camunda Web Modeler" exporterVersion="a89018a" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:collaboration id="Collaboration_N1">
+    <bpmn:participant id="Pool_Client" name="Client (boîte noire)" />
+    <bpmn:participant id="Pool_NovaTrade" name="NovaTrade" processRef="Process_NovaTrade_N1" />
+    <bpmn:participant id="Pool_Transporteur" name="Transporteur (boîte noire)" />
+    <bpmn:messageFlow id="MF_Commande" name="Commande" sourceRef="Pool_Client" targetRef="StartEvent_Commande" />
+    <bpmn:messageFlow id="MF_Confirmation" name="Confirmation" sourceRef="SP1" targetRef="Pool_Client" />
+    <bpmn:messageFlow id="MF_DemandeCollecte" name="Demande de collecte" sourceRef="SP2" targetRef="Pool_Transporteur" />
+    <bpmn:messageFlow id="MF_Suivi" name="Suivi / Livraison" sourceRef="Pool_Transporteur" targetRef="SP2" />
+    <bpmn:messageFlow id="MF_NotifExp" name="Notification expédition" sourceRef="SP2" targetRef="Pool_Client" />
+    <bpmn:messageFlow id="MF_Facture" name="Facture" sourceRef="SP3" targetRef="Pool_Client" />
+    <bpmn:messageFlow id="MF_Paiement" name="Paiement" sourceRef="Pool_Client" targetRef="SP3" />
+    <bpmn:messageFlow id="MF_ConfirmationPay" name="Confirmation paiement" sourceRef="SP3" targetRef="Pool_Client" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_NovaTrade_N1" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_NT">
+      <bpmn:lane id="Lane_Vente" name="Vente">
+        <bpmn:flowNodeRef>StartEvent_Commande</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XOR1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndHold</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SP1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Finance" name="Finance">
+        <bpmn:flowNodeRef>EndOK</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>XOR2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEsc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SP3</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Execution" name="Exécution">
+        <bpmn:flowNodeRef>SP2</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="SF_Start_SP1" sourceRef="StartEvent_Commande" targetRef="SP1" />
+    <bpmn:sequenceFlow id="SF_SP1_XOR1" sourceRef="SP1" targetRef="XOR1" />
+    <bpmn:sequenceFlow id="SF_XOR1_Reject" name="Rejet" sourceRef="XOR1" targetRef="EndReject" />
+    <bpmn:sequenceFlow id="SF_XOR1_Hold" name="OnHold" sourceRef="XOR1" targetRef="EndHold" />
+    <bpmn:sequenceFlow id="SF_XOR1_SP2" name="Confirmée" sourceRef="XOR1" targetRef="SP2" />
+    <bpmn:sequenceFlow id="SF_SP2_SP3" sourceRef="SP2" targetRef="SP3" />
+    <bpmn:sequenceFlow id="SF_SP3_XOR2" sourceRef="SP3" targetRef="XOR2" />
+    <bpmn:sequenceFlow id="SF_XOR2_OK" name="Payée" sourceRef="XOR2" targetRef="EndOK" />
+    <bpmn:sequenceFlow id="SF_XOR2_Esc" name="3 relances sans paiement" sourceRef="XOR2" targetRef="EndEsc" />
+    <bpmn:startEvent id="StartEvent_Commande" name="Commande reçue">
+      <bpmn:outgoing>SF_Start_SP1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_Start" />
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="XOR1" name="Résultat ?">
+      <bpmn:incoming>SF_SP1_XOR1</bpmn:incoming>
+      <bpmn:outgoing>SF_XOR1_Reject</bpmn:outgoing>
+      <bpmn:outgoing>SF_XOR1_Hold</bpmn:outgoing>
+      <bpmn:outgoing>SF_XOR1_SP2</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndReject" name="Commande rejetée">
+      <bpmn:incoming>SF_XOR1_Reject</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MED_Reject" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndHold" name="Commande OnHold">
+      <bpmn:incoming>SF_XOR1_Hold</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MED_Hold" />
+    </bpmn:endEvent>
+    <bpmn:subProcess id="SP1" name="1. Recevoir et confirmer la commande">
+      <bpmn:incoming>SF_Start_SP1</bpmn:incoming>
+      <bpmn:outgoing>SF_SP1_XOR1</bpmn:outgoing>
+    </bpmn:subProcess>
+    <bpmn:subProcess id="SP2" name="2. Préparer et expédier la commande">
+      <bpmn:incoming>SF_XOR1_SP2</bpmn:incoming>
+      <bpmn:outgoing>SF_SP2_SP3</bpmn:outgoing>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="EndOK" name="Commande clôturée">
+      <bpmn:incoming>SF_XOR2_OK</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="XOR2" name="Résultat ?">
+      <bpmn:incoming>SF_SP3_XOR2</bpmn:incoming>
+      <bpmn:outgoing>SF_XOR2_OK</bpmn:outgoing>
+      <bpmn:outgoing>SF_XOR2_Esc</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEsc" name="Escalade recouvrement">
+      <bpmn:incoming>SF_XOR2_Esc</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MED_Esc" />
+    </bpmn:endEvent>
+    <bpmn:subProcess id="SP3" name="3. Facturer et encaisser">
+      <bpmn:incoming>SF_SP2_SP3</bpmn:incoming>
+      <bpmn:outgoing>SF_SP3_XOR2</bpmn:outgoing>
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_N1">
+    <bpmndi:BPMNPlane id="BPMNPlane_N1" bpmnElement="Collaboration_N1">
+      <bpmndi:BPMNShape id="Pool_Client_di" bpmnElement="Pool_Client" isHorizontal="true">
+        <dc:Bounds x="160" y="60" width="1120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Pool_NovaTrade_di" bpmnElement="Pool_NovaTrade" isHorizontal="true">
+        <dc:Bounds x="160" y="180" width="1120" height="620" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Vente_di" bpmnElement="Lane_Vente" isHorizontal="true">
+        <dc:Bounds x="190" y="180" width="1090" height="230" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Finance_di" bpmnElement="Lane_Finance" isHorizontal="true">
+        <dc:Bounds x="190" y="570" width="1090" height="230" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Execution_di" bpmnElement="Lane_Execution" isHorizontal="true">
+        <dc:Bounds x="190" y="410" width="1090" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_Commande_di" bpmnElement="StartEvent_Commande">
+        <dc:Bounds x="260" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="234" y="315" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="XOR1_di" bpmnElement="XOR1" isMarkerVisible="true">
+        <dc:Bounds x="520" y="265" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="485" y="253" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndReject_di" bpmnElement="EndReject">
+        <dc:Bounds x="620" y="230" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="612" y="196" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndHold_di" bpmnElement="EndHold">
+        <dc:Bounds x="620" y="314" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="612" y="354" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndOK_di" bpmnElement="EndOK">
+        <dc:Bounds x="1200" y="592" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1191" y="636" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="XOR2_di" bpmnElement="XOR2" isMarkerVisible="true">
+        <dc:Bounds x="1100" y="645" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1065" y="643" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEsc_di" bpmnElement="EndEsc">
+        <dc:Bounds x="1200" y="705" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1186" y="745" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SP1_di" bpmnElement="SP1" isExpanded="false">
+        <dc:Bounds x="340" y="250" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SP2_di" bpmnElement="SP2" isExpanded="false">
+        <dc:Bounds x="720" y="450" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SP3_di" bpmnElement="SP3" isExpanded="false">
+        <dc:Bounds x="920" y="630" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_SP1_di" bpmnElement="SF_Start_SP1">
+        <di:waypoint x="296" y="290" />
+        <di:waypoint x="340" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_SP1_XOR1_di" bpmnElement="SF_SP1_XOR1">
+        <di:waypoint x="480" y="290" />
+        <di:waypoint x="520" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR1_Reject_di" bpmnElement="SF_XOR1_Reject">
+        <di:waypoint x="545" y="265" />
+        <di:waypoint x="545" y="248" />
+        <di:waypoint x="620" y="248" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="557" y="223" width="26" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR1_Hold_di" bpmnElement="SF_XOR1_Hold">
+        <di:waypoint x="545" y="315" />
+        <di:waypoint x="545" y="332" />
+        <di:waypoint x="620" y="332" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="551" y="343" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR1_SP2_di" bpmnElement="SF_XOR1_SP2">
+        <di:waypoint x="570" y="290" />
+        <di:waypoint x="790" y="290" />
+        <di:waypoint x="790" y="450" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="574" y="273" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_SP2_SP3_di" bpmnElement="SF_SP2_SP3">
+        <di:waypoint x="860" y="490" />
+        <di:waypoint x="990" y="490" />
+        <di:waypoint x="990" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_SP3_XOR2_di" bpmnElement="SF_SP3_XOR2">
+        <di:waypoint x="1060" y="670" />
+        <di:waypoint x="1100" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR2_OK_di" bpmnElement="SF_XOR2_OK">
+        <di:waypoint x="1125" y="645" />
+        <di:waypoint x="1125" y="610" />
+        <di:waypoint x="1200" y="610" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1144" y="593" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_XOR2_Esc_di" bpmnElement="SF_XOR2_Esc">
+        <di:waypoint x="1125" y="695" />
+        <di:waypoint x="1125" y="723" />
+        <di:waypoint x="1200" y="723" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1101" y="736" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Pool_Transporteur_di" bpmnElement="Pool_Transporteur" isHorizontal="true">
+        <dc:Bounds x="160" y="820" width="1120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="MF_Commande_di" bpmnElement="MF_Commande">
+        <di:waypoint x="278" y="140" />
+        <di:waypoint x="278" y="272" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="291" y="217" width="57" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Confirmation_di" bpmnElement="MF_Confirmation">
+        <di:waypoint x="410" y="250" />
+        <di:waypoint x="410" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="418" y="217" width="63" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_DemandeCollecte_di" bpmnElement="MF_DemandeCollecte">
+        <di:waypoint x="770" y="530" />
+        <di:waypoint x="770" y="820" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="698" y="658" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Suivi_di" bpmnElement="MF_Suivi">
+        <di:waypoint x="820" y="820" />
+        <di:waypoint x="820" y="530" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="831" y="665" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_NotifExp_di" bpmnElement="MF_NotifExp">
+        <di:waypoint x="730" y="450" />
+        <di:waypoint x="730" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="732" y="246" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Facture_di" bpmnElement="MF_Facture">
+        <di:waypoint x="940" y="630" />
+        <di:waypoint x="940" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="881" y="371" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Paiement_di" bpmnElement="MF_Paiement">
+        <di:waypoint x="990" y="140" />
+        <di:waypoint x="990" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="996" y="371" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_ConfirmationPay_di" bpmnElement="MF_ConfirmationPay">
+        <di:waypoint x="1040" y="630" />
+        <di:waypoint x="1040" y="140" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1048" y="363" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram>
+    <bpmndi:BPMNPlane bpmnElement="SP1" />
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram>
+    <bpmndi:BPMNPlane bpmnElement="SP2" />
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram>
+    <bpmndi:BPMNPlane bpmnElement="SP3" />
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_N22"
+                  targetNamespace="http://nsi-training/study-case/bpmn">
+
+  <bpmn:collaboration id="Collaboration_N22">
+    <bpmn:participant id="Pool_Client" name="Client (boîte noire)"/>
+    <bpmn:participant id="Pool_Execution" name="NovaTrade — Exécution (Préparer et expédier la commande)" processRef="Process_Execution"/>
+    <bpmn:participant id="Pool_Transporteur" name="Transporteur (boîte noire)"/>
+
+    <bpmn:messageFlow id="MF_DemandeCollecte" name="Demande de collecte"     sourceRef="T4_NotifTrans"   targetRef="Pool_Transporteur"/>
+    <bpmn:messageFlow id="MF_Collecte"        name="Collecte / pickup"       sourceRef="Pool_Transporteur" targetRef="Wait_Pickup"/>
+    <bpmn:messageFlow id="MF_NotifClient"     name="Notification expédition (suivi)" sourceRef="T6_NotifClient" targetRef="Pool_Client"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_Execution" isExecutable="false">
+
+    <bpmn:startEvent id="Start_Conf" name="Commande confirmée">
+      <bpmn:outgoing>SF_Start_T1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:serviceTask id="T1_PickList" name="Générer la liste de prélèvement">
+      <bpmn:incoming>SF_Start_T1</bpmn:incoming>
+      <bpmn:outgoing>SF_T1_Split</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:parallelGateway id="ParaSplit" name="">
+      <bpmn:incoming>SF_T1_Split</bpmn:incoming>
+      <bpmn:outgoing>SF_Split_T2</bpmn:outgoing>
+      <bpmn:outgoing>SF_Split_T3</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:userTask id="T2_PickPack" name="Prélever et emballer les articles">
+      <bpmn:incoming>SF_Split_T2</bpmn:incoming>
+      <bpmn:outgoing>SF_T2_Join</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:serviceTask id="T3_Label" name="Générer l'étiquette de transport">
+      <bpmn:incoming>SF_Split_T3</bpmn:incoming>
+      <bpmn:outgoing>SF_T3_Join</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:parallelGateway id="ParaJoin" name="">
+      <bpmn:incoming>SF_T2_Join</bpmn:incoming>
+      <bpmn:incoming>SF_T3_Join</bpmn:incoming>
+      <bpmn:outgoing>SF_Join_T4</bpmn:outgoing>
+    </bpmn:parallelGateway>
+
+    <bpmn:sendTask id="T4_NotifTrans" name="Notifier le Transporteur">
+      <bpmn:incoming>SF_Join_T4</bpmn:incoming>
+      <bpmn:outgoing>SF_T4_Wait</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:intermediateCatchEvent id="Wait_Pickup" name="Collecte par le Transporteur">
+      <bpmn:incoming>SF_T4_Wait</bpmn:incoming>
+      <bpmn:outgoing>SF_Wait_T5</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_Pickup"/>
+    </bpmn:intermediateCatchEvent>
+
+    <bpmn:serviceTask id="T5_RecordTracking" name="Enregistrer n° de suivi et marquer Dispatched">
+      <bpmn:incoming>SF_Wait_T5</bpmn:incoming>
+      <bpmn:outgoing>SF_T5_T6</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:sendTask id="T6_NotifClient" name="Notifier le Client (suivi)">
+      <bpmn:incoming>SF_T5_T6</bpmn:incoming>
+      <bpmn:outgoing>SF_T6_End</bpmn:outgoing>
+    </bpmn:sendTask>
+
+    <bpmn:endEvent id="End_Exp" name="Expédition en cours">
+      <bpmn:incoming>SF_T6_End</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="SF_Start_T1" sourceRef="Start_Conf"     targetRef="T1_PickList"/>
+    <bpmn:sequenceFlow id="SF_T1_Split" sourceRef="T1_PickList"    targetRef="ParaSplit"/>
+    <bpmn:sequenceFlow id="SF_Split_T2" sourceRef="ParaSplit"      targetRef="T2_PickPack"/>
+    <bpmn:sequenceFlow id="SF_Split_T3" sourceRef="ParaSplit"      targetRef="T3_Label"/>
+    <bpmn:sequenceFlow id="SF_T2_Join"  sourceRef="T2_PickPack"    targetRef="ParaJoin"/>
+    <bpmn:sequenceFlow id="SF_T3_Join"  sourceRef="T3_Label"       targetRef="ParaJoin"/>
+    <bpmn:sequenceFlow id="SF_Join_T4"  sourceRef="ParaJoin"       targetRef="T4_NotifTrans"/>
+    <bpmn:sequenceFlow id="SF_T4_Wait"  sourceRef="T4_NotifTrans"  targetRef="Wait_Pickup"/>
+    <bpmn:sequenceFlow id="SF_Wait_T5"  sourceRef="Wait_Pickup"    targetRef="T5_RecordTracking"/>
+    <bpmn:sequenceFlow id="SF_T5_T6"    sourceRef="T5_RecordTracking" targetRef="T6_NotifClient"/>
+    <bpmn:sequenceFlow id="SF_T6_End"   sourceRef="T6_NotifClient" targetRef="End_Exp"/>
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_N22">
+    <bpmndi:BPMNPlane id="BPMNPlane_N22" bpmnElement="Collaboration_N22">
+
+      <bpmndi:BPMNShape id="Pool_Client_di" bpmnElement="Pool_Client" isHorizontal="true">
+        <dc:Bounds x="160" y="60" width="1620" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Pool_Execution_di" bpmnElement="Pool_Execution" isHorizontal="true">
+        <dc:Bounds x="160" y="180" width="1620" height="400"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Pool_Transporteur_di" bpmnElement="Pool_Transporteur" isHorizontal="true">
+        <dc:Bounds x="160" y="620" width="1620" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Start_Conf_di" bpmnElement="Start_Conf">
+        <dc:Bounds x="220" y="362" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="200" y="405" width="80" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T1_di" bpmnElement="T1_PickList">
+        <dc:Bounds x="300" y="340" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParaSplit_di" bpmnElement="ParaSplit">
+        <dc:Bounds x="480" y="355" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T2_di" bpmnElement="T2_PickPack">
+        <dc:Bounds x="570" y="240" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T3_di" bpmnElement="T3_Label">
+        <dc:Bounds x="570" y="440" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParaJoin_di" bpmnElement="ParaJoin">
+        <dc:Bounds x="750" y="355" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T4_di" bpmnElement="T4_NotifTrans">
+        <dc:Bounds x="840" y="340" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Wait_Pickup_di" bpmnElement="Wait_Pickup">
+        <dc:Bounds x="1020" y="362" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1000" y="405" width="80" height="28"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T5_di" bpmnElement="T5_RecordTracking">
+        <dc:Bounds x="1100" y="340" width="160" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T6_di" bpmnElement="T6_NotifClient">
+        <dc:Bounds x="1300" y="340" width="160" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Exp_di" bpmnElement="End_Exp">
+        <dc:Bounds x="1500" y="362" width="36" height="36"/>
+        <bpmndi:BPMNLabel><dc:Bounds x="1478" y="405" width="80" height="14"/></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="SF_Start_T1_di" bpmnElement="SF_Start_T1">
+        <di:waypoint x="256" y="380"/>
+        <di:waypoint x="300" y="380"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T1_Split_di" bpmnElement="SF_T1_Split">
+        <di:waypoint x="440" y="380"/>
+        <di:waypoint x="480" y="380"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Split_T2_di" bpmnElement="SF_Split_T2">
+        <di:waypoint x="505" y="355"/>
+        <di:waypoint x="505" y="280"/>
+        <di:waypoint x="570" y="280"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Split_T3_di" bpmnElement="SF_Split_T3">
+        <di:waypoint x="505" y="405"/>
+        <di:waypoint x="505" y="480"/>
+        <di:waypoint x="570" y="480"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T2_Join_di" bpmnElement="SF_T2_Join">
+        <di:waypoint x="710" y="280"/>
+        <di:waypoint x="775" y="280"/>
+        <di:waypoint x="775" y="355"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T3_Join_di" bpmnElement="SF_T3_Join">
+        <di:waypoint x="710" y="480"/>
+        <di:waypoint x="775" y="480"/>
+        <di:waypoint x="775" y="405"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Join_T4_di" bpmnElement="SF_Join_T4">
+        <di:waypoint x="800" y="380"/>
+        <di:waypoint x="840" y="380"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T4_Wait_di" bpmnElement="SF_T4_Wait">
+        <di:waypoint x="980" y="380"/>
+        <di:waypoint x="1020" y="380"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Wait_T5_di" bpmnElement="SF_Wait_T5">
+        <di:waypoint x="1056" y="380"/>
+        <di:waypoint x="1100" y="380"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T5_T6_di" bpmnElement="SF_T5_T6">
+        <di:waypoint x="1260" y="380"/>
+        <di:waypoint x="1300" y="380"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T6_End_di" bpmnElement="SF_T6_End">
+        <di:waypoint x="1460" y="380"/>
+        <di:waypoint x="1500" y="380"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="MF_DemandeCollecte_di" bpmnElement="MF_DemandeCollecte">
+        <di:waypoint x="910" y="420"/>
+        <di:waypoint x="910" y="620"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Collecte_di" bpmnElement="MF_Collecte">
+        <di:waypoint x="1038" y="620"/>
+        <di:waypoint x="1038" y="398"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_NotifClient_di" bpmnElement="MF_NotifClient">
+        <di:waypoint x="1380" y="340"/>
+        <di:waypoint x="1380" y="140"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
